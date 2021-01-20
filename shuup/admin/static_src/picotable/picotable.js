@@ -157,6 +157,7 @@ const Picotable = (function (m, storage) {
         "PAGE": gettext("Page"),
         "RESET_FILTERS": gettext("Reset filters"),
         "RESET": gettext("Reset"),
+        "APPLY_FILTERS": gettext("Apply filters"),
         "SORT_BY": gettext("Sort by"),
         "SORT_ASC": gettext("ascending"),
         "SORT_DESC": gettext("descending"),
@@ -612,13 +613,25 @@ const Picotable = (function (m, storage) {
                         },
                         lang.RESET
                     ),
-                    m("button.btn.btn-primary", {
+                    m("button.btn.btn-default", {
                         onclick: function () {
                             ctrl.vm.showMobileFilterSettings(false);
                         }
-                    }, gettext("Done")),
+                    }, gettext("Close")),
                 ]),
-                m("div.mobile-filters-content", filters)
+                m("div.mobile-filters-content", [
+                    filters,
+                    m("div.apply-filters", [
+                        m(
+                            "button.btn.btn-block.btn-primary",
+                            {
+                                // TODO: Apply all the filters in onclick
+                                // onclick: ctrl.refresh(),
+                            },
+                            lang.APPLY_FILTERS
+                        ),
+                    ]),
+                ]),
             ])
         ]);
     }
@@ -663,6 +676,8 @@ const Picotable = (function (m, storage) {
         // Set default filter values
         var defaultValues = Util.extend(getDefaultValues(ctrl), ctrl.vm.filterValues());
         ctrl.vm.filterValues(defaultValues);
+
+        const filterCount = ctrl.getActiveFilterCount();
 
         var isPick = !!ctrl.vm.pickId();
         var massActions = (ctrl.vm.data() ? ctrl.vm.data().massActions : null);
@@ -748,13 +763,17 @@ const Picotable = (function (m, storage) {
         return m("div.mobile", [
             m("div.mobile-header.row", [
                 m("div.col", [
-                    m("button.btn.btn-info.btn-block.toggle-btn",
+                    m("button.btn.btn-default.btn-block.toggle-btn.position-relative",
                         {
                             onclick: function () {
                                 ctrl.vm.showMobileFilterSettings(true);
                             }
                         },
-                        [m("i.fa.fa-filter")], gettext("Show filters")
+                        [m("i.fa.fa-filter")], gettext("Show filters"),
+                        (filterCount ?
+                            m("span.badge.badge-pill.badge-dark.active-filter-counter",
+                            filterCount
+                        ) : null),
                     )
                 ]),
                 m("div.col-sm-6", [
@@ -876,9 +895,18 @@ const Picotable = (function (m, storage) {
             onclick: initSelect,
         };
 
+        const filterCount = ctrl.getActiveFilterCount();
+
         return m("div.picotable-filter.btn-group.d-none.d-lg-flex",
-            m("button.btn.btn-default.btn-icon.dropdown-toggle", dropdownButtonSettings,
-                m("i.fa.fa-filter"), gettext("Filters")),
+            m("button.btn.btn-default.btn-icon.dropdown-toggle",
+                dropdownButtonSettings,
+                m("i.fa.fa-filter"),
+                gettext("Filters"),
+                (filterCount > 0 ?
+                    m("span.badge.badge-pill.badge-dark.active-filter-counter",
+                    filterCount
+                ) : null),
+            ),
             m("div.dropdown-menu.dropdown-menu-right.pl-3.pr-3", {
                 "aria-labelledby": "dropdownFilter"
             },
@@ -892,7 +920,17 @@ const Picotable = (function (m, storage) {
                         },
                         lang.RESET_FILTERS
                     )
-                )
+                ),
+                m("div.apply-filters", [
+                    m(
+                        "button.btn.btn-block.btn-primary",
+                        {
+                            // TODO: Apply all the filters in onclick
+                            // onclick: ctrl.refresh(),
+                        },
+                        lang.APPLY_FILTERS
+                    ),
+                ]),
             )
         );
     }
@@ -1062,6 +1100,9 @@ const Picotable = (function (m, storage) {
             const filters = storage.getItem(ctrl.getFilterKey());
             return filters ? JSON.parse(filters) : {};
         };
+        ctrl.getActiveFilterCount = function () {
+            return Object.keys(ctrl.getFilters()).length;
+        }
         ctrl.saveFilters = function () {
             if (!storage) return;
             var filters = ctrl.vm.filterValues();
